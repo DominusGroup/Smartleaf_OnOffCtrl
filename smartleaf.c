@@ -1,6 +1,6 @@
 #include <wiringPiI2C.h>
 #include <wiringPi.h>
-
+#include <pthread.h> // threads 
 #include <rpigpio.h> // pinMode, digitalWrite
 #include <stdio.h>
 #include <fcntl.h>
@@ -51,9 +51,17 @@ void typeln(const char *s);
 void typeChar(char val);
 int fd;
 
+void *f1(void *prt) ;
+
 int main(){
   char word[KEYPAD_INPUTS] ; 
   char hora[2], min[2] ;
+  int alarma1 = 1500 ; 
+  int tiempo1 = 2 ;
+  int RTC2min = 0 ; int x ;
+
+  pthread_t tid ;
+
 
   if(map_peripheral(&gpio) == -1)
   {
@@ -80,7 +88,7 @@ int main(){
     int USERminute = 60 ; 
     int USERhour = 60 ;   
 
-printf("Introduzca 7 para configurar hora\n");
+	printf("Introduzca 7 para configurar hora\n");
     fgets(word, KEYPAD_INPUTS, stdin) ;
     int key = (int)strtol(word, (char **)NULL, 10) ; 
 
@@ -93,12 +101,20 @@ printf("Introduzca 7 para configurar hora\n");
       printf("Introduzca minuto para encender el Sistema\n") ;
       fgets(word, KEYPAD_INPUTS, stdin) ; 
       USERminute = (int)strtol(word, (char **)NULL, 10) ;       
+      
+      alarma1 = USERhour*60 + USERminute ; 
+
     // Imprime la hora establecida 
       if(USERminute <= 9)
         printf("Hora de encendido establecida = %d:0%d\n", USERhour, USERminute) ;
       else  
-        printf("Hora de encendido establecida = %d:%d\n", USERhour, USERminute) ;
+        printf("Hora de encendido establecida = %d:%d\n", USERhour, USERminute) ;      
     }
+  
+  if(pthread_create(&tid, NULL, f1, &x)){
+	fprintf(stderr, "Error creating thread\n");
+	return 1 ; 
+  }
 
   while (1){
   // Obtener la hora 
@@ -119,7 +135,7 @@ printf("Introduzca 7 para configurar hora\n");
       hora[2] = '\0' ; 
       min[0] = *(rtc-2) ; 
       min[1] = *(rtc-1) ; 
-      min[2] = '\0' ; 
+      min[2] = '\0' ;       
     }
   }
   // Imprime hora del sistema 
@@ -128,8 +144,11 @@ printf("Introduzca 7 para configurar hora\n");
     int RTCminute = (int)strtol(min, (char **)NULL, 10) ;
     int RTChour = (int)strtol(hora, (char **)NULL, 10) ;
 
+    RTC2min = RTChour*60 + RTCminute ; 
+
   // Condicion de encedido/apagado
-    if(RTCminute >= USERminute && RTChour >= USERhour)
+    //if(RTCminute >= USERminute && RTChour >= USERhour)
+    if(RTC2min >= alarma1 && RTC2min < (alarma1 +tiempo1))
       digitalWrite(pin1, highState) ;
     else
       digitalWrite(pin1, lowState) ;
@@ -140,8 +159,32 @@ printf("Introduzca 7 para configurar hora\n");
 
   }
 
+	// Wait until thread is done its work
+  if(pthread_join(tid, NULL)){
+	fprintf(stderr, "Error joining thread\n") ;
+	return 2 ; 
+  }   
+
   return 0;
 
+}
+
+void *f1(void * prt){
+	int *x_prt = (int *)prt ; 
+    char word1[KEYPAD_INPUTS] ; 
+
+	//while(++(*x_prt) < 25) ; 
+	//printf("x incrementado \n");
+	
+	printf("Menu del sistema: digite 7 para reconfigurar \n") ;
+    fgets(word1, KEYPAD_INPUTS, stdin) ; 
+	printf("%s\n", word1) ;
+	return NULL ; 
+
+	//for(int i=0; i<25; i++)
+	//	printf("i = %d\n", i);
+
+	//pthread_exit(0) ;
 }
 
 
