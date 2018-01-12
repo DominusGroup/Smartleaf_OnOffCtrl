@@ -53,11 +53,14 @@ int fd;
 
 void *f1(void *prt) ;
 
+int USERminute = 60 ; 
+int USERhour = 60 ;   
+int alarma1 = 1500 ; 
+int tiempo1 = 2 ;
+
 int main(){
   char word[KEYPAD_INPUTS] ; 
   char hora[2], min[2] ;
-  int alarma1 = 1500 ; 
-  int tiempo1 = 2 ;
   int RTC2min = 0 ; int x ;
 
   pthread_t tid ;
@@ -76,19 +79,8 @@ int main(){
 
   fd = wiringPiI2CSetup(I2C_ADDR);
   lcd_init(); // setup LCD
-
-
-
-  //printf("date = %s", rtc);  
-
-  //char array1[] = rtc ; 
-  //int vuelta=0;
-
-
-    int USERminute = 60 ; 
-    int USERhour = 60 ;   
-
-	printf("Introduzca 7 para configurar hora\n");
+ 
+	/*printf("Introduzca 7 para configurar hora\n");
     fgets(word, KEYPAD_INPUTS, stdin) ;
     int key = (int)strtol(word, (char **)NULL, 10) ; 
 
@@ -109,7 +101,7 @@ int main(){
         printf("Hora de encendido establecida = %d:0%d\n", USERhour, USERminute) ;
       else  
         printf("Hora de encendido establecida = %d:%d\n", USERhour, USERminute) ;      
-    }
+    }*/
   
   if(pthread_create(&tid, NULL, f1, &x)){
 	fprintf(stderr, "Error creating thread\n");
@@ -171,18 +163,50 @@ int main(){
 
 void *f1(void * prt){
 	int *x_prt = (int *)prt ; 
-    char word1[KEYPAD_INPUTS] ; 
+    char buf[KEYPAD_INPUTS] ;
 
-	//while(++(*x_prt) < 25) ; 
-	//printf("x incrementado \n");
-	
-	printf("Menu del sistema: digite 7 para reconfigurar \n") ;
-    fgets(word1, KEYPAD_INPUTS, stdin) ; 
-	printf("%s\n", word1) ;
+/*	printf("Menu del sistema: \n Digite 7 para configurar alarma 1\n Digite 0 para esteblecer el temporizacion de alarma1 \n \n") ;
+    fgets(buf, KEYPAD_INPUTS, stdin) ; 
+    int key = (int)strtol(buf, (char **)NULL, 10) ; */
+    int key = 0 ; 
+while(1){
+  printf("\n\nMenu del sistema: \n       Digite 7 para configurar alarma 1\n       Digite 1 para esteblecer el temporizacion de alarma1 \n \n") ;
+  fgets(buf, KEYPAD_INPUTS, stdin) ; 
+  key = (int)strtol(buf, (char **)NULL, 10) ; 	
+  if(key == 7){
+    // Obtiene hora, minuto del teclado, y los convierte a enteros
+      printf("Introduzca la hora de encendido del sistema\n") ;
+      fgets(buf, KEYPAD_INPUTS, stdin) ; 
+      USERhour = (int)strtol(buf, (char **)NULL, 10) ; 
+      //printf("Introduzca minuto para encender el Sistema\n") ;
+      fgets(buf, KEYPAD_INPUTS, stdin) ; 
+      USERminute = (int)strtol(buf, (char **)NULL, 10) ;       
+      
+      alarma1 = USERhour*60 + USERminute ; 
+
+    // Imprime la hora establecida 
+      if(USERminute <= 9)
+        printf("Hora de encendido establecida = %d:0%d\n", USERhour, USERminute) ;
+      else  
+        printf("Hora de encendido establecida = %d:%d\n", USERhour, USERminute) ;      
+    
+    }
+    else if(key == 1){
+      printf("Establesca temporizacion del sistema\n") ; // en min, horas, ? pedirle al usuario en que formato desea ingresarlo
+      fgets(buf, KEYPAD_INPUTS, stdin) ; 
+      tiempo1 = (int)strtol(buf, (char **)NULL, 10) ;    
+      printf("Temporizacion del sistema establecida en %d\n", tiempo1) ; 	
+    }
+
+    /*else if(key == 1){
+    	// se queda en un bucle de espera con el teclado 
+    	fgets(buf, KEYPAD_INPUTS, stdin) ; 
+    	int key = (int)strtol(buf, (char **)NULL, 10) ; 
+    }*/
+
+}
+
 	return NULL ; 
-
-	//for(int i=0; i<25; i++)
-	//	printf("i = %d\n", i);
 
 	//pthread_exit(0) ;
 }
